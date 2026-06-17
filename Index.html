@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Copa2026 Audiencia",
+  "schemaVersion": 1,
+  "description": "Dashboard de audiência Copa do Mundo 2026 — Cazé TV (simultâneos) + alcance Globo, SporTV e SBT (Kantar IBOPE). 104 jogos, atualizado manualmente a cada jogo."
+}
+</script>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copa do Mundo 2026 - Audiências</title>
+<style>
+  :root {
+    --bg: #0D1117;
+    --surface: #161B22;
+    --surface2: #1C2230;
+    --border: #30363D;
+    --accent: #AADC32;
+    --accent2: #7EB822;
+    --text: #E6EDF3;
+    --text2: #8B949E;
+    --brasil: #FFD700;
+    --live: #FF4444;
+    --encerrado: #3FB950;
+    --pendente: #58A6FF;
+    --font: Arial, sans-serif;
+  }
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #0D1117 0%, #1a2a0a 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 20px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-left h1 { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+  .header-left p { color: var(--text2); font-size: 12px; margin-top: 2px; }
+  .header-right { text-align: right; }
+  .badge-cazetv {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600;
+  }
+  .badge-cazetv .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .last-update { color: var(--text2); font-size: 11px; margin-top: 6px; }
+
+  /* KPI CARDS */
+  .kpis { display: flex; gap: 16px; padding: 20px 32px; }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 20px; flex: 1;
+    border-top: 3px solid var(--accent);
+  }
+  .kpi .label { color: var(--text2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi .value { font-size: 28px; font-weight: 700; color: var(--accent); margin-top: 4px; }
+  .kpi .sub { color: var(--text2); font-size: 11px; margin-top: 2px; }
+
+  /* FILTERS */
+  .filters {
+    padding: 0 32px 16px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+  .filter-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text2); border-radius: 6px; padding: 6px 14px;
+    cursor: pointer; font-size: 12px; font-weight: 600; transition: all .15s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--accent); color: #0D1117; border-color: var(--accent);
+  }
+  .filter-label { color: var(--text2); font-size: 11px; margin-right: 4px; }
+
+  /* TABLE */
+  .table-wrap { padding: 0 32px 40px; }
+  .phase-header {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0 10px;
+  }
+  .phase-title {
+    font-size: 13px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--accent);
+  }
+  .phase-line { flex: 1; height: 1px; background: var(--border); }
+  .phase-count { color: var(--text2); font-size: 11px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--surface2); }
+  th {
+    padding: 10px 12px; text-align: left; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.5px; color: var(--text2);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  tr.data-row { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tr.data-row:hover { background: var(--surface); }
+  td { padding: 10px 12px; vertical-align: middle; }
+
+  /* Brasil highlight */
+  tr.brasil-row { background: rgba(255,215,0,0.04); }
+  tr.brasil-row:hover { background: rgba(255,215,0,0.08); }
+  tr.brasil-row td.teams { border-left: 3px solid var(--brasil); }
+
+  /* Status badges */
+  .status {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap;
+  }
+  .status.encerrado { background: rgba(63,185,80,.15); color: var(--encerrado); }
+  .status.pendente { background: rgba(88,166,255,.12); color: var(--pendente); }
+  .status.live {
+    background: rgba(255,68,68,.15); color: var(--live);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+  .status .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* Teams column */
+  .teams { font-weight: 600; font-size: 13px; }
+  .team-vs { color: var(--text2); margin: 0 6px; font-size: 11px; font-weight: 400; }
+  .brasil-flag { margin-left: 4px; }
+
+  /* Group badge */
+  .grupo {
+    display: inline-block; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: 700;
+    color: var(--text2); min-width: 22px; text-align: center;
+  }
+
+  /* Audience */
+  .views { font-size: 13px; font-weight: 600; color: var(--accent); }
+  .views-sub { color: var(--text2); font-size: 10px; }
+  .views-none { color: var(--border); font-size: 11px; }
+  .views-link { color: var(--accent); text-decoration: none; font-size: 11px; }
+  .views-link:hover { text-decoration: underline; }
+
+
+  /* Date/time */
+  .datetime { white-space: nowrap; }
+  .date { color: var(--text); font-size: 12px; }
+  .time { color: var(--text2); font-size: 11px; margin-top: 1px; }
+
+  .city { color: var(--text2); font-size: 12px; }
+
+  /* FOOTER */
+  .footer {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 16px 32px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer-left { color: var(--text2); font-size: 11px; line-height: 1.6; }
+  .footer-right { color: var(--text2); font-size: 11px; text-align: right; }
+  .accent { color: var(--accent); font-weight: 600; }
+
+  /* HEADER STATS STRIP */
+  .header-stats {
+    background: rgba(0,0,0,0.35);
+    border-top: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex; gap: 40px; align-items: center; flex-wrap: wrap;
+  }
+  .hstat { display: flex; flex-direction: column; }
+  .hstat-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 2px; }
+  .hstat-value { font-size: 22px; font-weight: 700; line-height: 1.1; }
+  .hstat-sub { font-size: 10px; color: var(--text2); margin-top: 2px; }
+  .hstat-divider { width: 1px; height: 36px; background: var(--border); flex-shrink: 0; }
+
+  /* TOOLTIP */
+  .tooltip-icon { cursor: help; color: var(--text2); font-size: 11px; margin-left: 4px; }
+
+  /* Responsive hide */
+  @media (max-width: 900px) {
+    .kpis { flex-wrap: wrap; }
+    .kpi { flex: 1 1 45%; }
+    .th-city, .td-city { display: none; }
+  }
+
+  /* Hidden row */
+  tr.hidden { display: none; }
+
+  /* Top viewer bar highlight */
+  tr.top-view td.views-td { background: rgba(170,220,50,.05); }
+
+  /* TABS */
+  .tabs-nav {
+    display: flex; gap: 0; padding: 0 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .tab-btn {
+    background: none; border: none; color: var(--text2);
+    padding: 12px 22px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border-bottom: 3px solid transparent;
+    margin-bottom: -1px; transition: all .15s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* CHARTS */
+  .charts-wrap { padding: 24px 32px 40px; }
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px;
+  }
+  .chart-card.full { grid-column: 1 / -1; }
+  .chart-title { font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; color: var(--text2); margin-bottom: 16px; }
+  .chart-title span { color: var(--accent); }
+  .chart-container { position: relative; height: 220px; }
+  .chart-container.tall { height: 300px; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <h1>🏆 Copa do Mundo 2026 - Audiências</h1>
+    <p>Audiência simultânea (Cazé TV) · Alcance Globo & SporTV (Kantar IBOPE) | 104 jogos | 11 Jun – 19 Jul 2026</p>
+  </div>
+  <div class="header-right">
+    <div class="badge-cazetv">
+      <span class="dot"></span>
+      <span>@CazéTV — UCZiYbVptd3PVPf4f6eR6UaQ</span>
+    </div>
+    <div class="last-update" id="lastUpdate">Última atualização: carregando...</div>
+  </div>
+</div>
+
+<!-- HEADER STATS -->
+<div class="header-stats">
+  <div class="hstat">
+    <div class="hstat-label">🟢 CazéTV · CPM Médio</div>
+    <div class="hstat-value" id="hs-caze" style="color:var(--accent)">—</div>
+    <div class="hstat-sub">cota R$ 185 mi · por mil espect. simultâneos</div>
+  </div>
+  <div class="hstat-divider"></div>
+  <div class="hstat">
+    <div class="hstat-label">📡 Globo · CPM Médio</div>
+    <div class="hstat-value" id="hs-globo" style="color:#4FC3F7">—</div>
+    <div class="hstat-sub">cota R$ 265 mi · Kantar IBOPE</div>
+  </div>
+  <div class="hstat-divider"></div>
+  <div class="hstat">
+    <div class="hstat-label">📡 SporTV · CPM Médio (tabela)</div>
+    <div class="hstat-value" id="hs-sportv" style="color:#7B61FF">—</div>
+    <div class="hstat-sub">cota tabela R$ 52 mi · Kantar IBOPE</div>
+  </div>
+  <div class="hstat-divider"></div>
+  <div class="hstat">
+    <div class="hstat-label">📡 SporTV · CPM Real</div>
+    <div class="hstat-value" id="hs-sportv-gpac" style="color:#A78BFA">—</div>
+    <div class="hstat-sub">cota R$ 1.244.464 · Kantar IBOPE</div>
+  </div>
+  <div class="hstat-divider"></div>
+  <div class="hstat">
+    <div class="hstat-label">📡 SBT · CPM Médio</div>
+    <div class="hstat-value" id="hs-sbt" style="color:#FFB74D">—</div>
+    <div class="hstat-sub">cota R$ 626,5 mi · Kantar IBOPE</div>
+  </div>
+  <div class="hstat-divider"></div>
+  <div class="hstat">
+    <div class="hstat-label">🟢 CazéTV · Média/Jogo</div>
+    <div class="hstat-value" id="hs-med-caze" style="color:var(--accent)">—</div>
+    <div class="hstat-sub">espect. simultâneos por jogo</div>
+  </div>
+  <div class="hstat-divider"></div>
+  <div class="hstat">
+    <div class="hstat-label">📡 Globo · Média/Jogo</div>
+    <div class="hstat-value" id="hs-med-globo" style="color:#4FC3F7">—</div>
+    <div class="hstat-sub">alcance médio por jogo · Kantar</div>
+  </div>
+  <div class="hstat-divider"></div>
+  <div class="hstat">
+    <div class="hstat-label">📡 SporTV · Média/Jogo</div>
+    <div class="hstat-value" id="hs-med-sportv" style="color:#7B61FF">—</div>
+    <div class="hstat-sub">alcance médio por jogo · Kantar</div>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="kpis">
+  <div class="kpi">
+    <div class="label">Total de Jogos</div>
+    <div class="value" id="kpi-total">104</div>
+    <div class="sub">Copa do Mundo 2026</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Jogos Encerrados</div>
+    <div class="value" id="kpi-encerrados">—</div>
+    <div class="sub">jogos concluídos</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Maior Audiência Simult. — Cazé TV</div>
+    <div class="value" id="kpi-top">—</div>
+    <div class="sub" id="kpi-top-game">pico de espectadores simultâneos no YouTube (Cazé TV)</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Média por Jogo — Cazé TV</div>
+    <div class="value" id="kpi-media">—</div>
+    <div class="sub">espectadores simultâneos no YouTube (Cazé TV)</div>
+  </div>
+</div>
+
+<!-- TABS NAV -->
+<div class="tabs-nav">
+  <button class="tab-btn active" onclick="switchTab('tabela',this)">📋 Jogos</button>
+  <button class="tab-btn" onclick="switchTab('graficos',this)">📊 Gráficos</button>
+</div>
+
+<!-- TAB: TABELA -->
+<div class="tab-panel active" id="tab-tabela">
+
+<!-- FILTERS -->
+<div class="filters">
+  <span class="filter-label">FASE:</span>
+  <button class="filter-btn active" data-filter="all" onclick="filterPhase('all',this)">Todos</button>
+  <button class="filter-btn" data-filter="Grupos" onclick="filterPhase('Grupos',this)">Grupos</button>
+  <button class="filter-btn" data-filter="R32" onclick="filterPhase('R32',this)">R32</button>
+  <button class="filter-btn" data-filter="Oitavas" onclick="filterPhase('Oitavas',this)">Oitavas</button>
+  <button class="filter-btn" data-filter="Quartas" onclick="filterPhase('Quartas',this)">Quartas</button>
+  <button class="filter-btn" data-filter="Semifinal" onclick="filterPhase('Semifinal',this)">Semis</button>
+  <button class="filter-btn" data-filter="Final" onclick="filterPhase('Final',this)">Final</button>
+  &nbsp;
+  <span class="filter-label">STATUS:</span>
+  <button class="filter-btn" data-status="encerrado" onclick="filterStatus('encerrado',this)">✓ Encerrados</button>
+  <button class="filter-btn" data-status="brasil" onclick="filterStatus('brasil',this)">🇧🇷 Brasil</button>
+  <button class="filter-btn" data-status="com_dados" onclick="filterStatus('com_dados',this)">📊 Com dados</button>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap" id="tableWrap">
+  <!-- Populated by JS -->
+</div>
+
+</div><!-- /tab-tabela -->
+
+<!-- TAB: GRÁFICOS -->
+<div class="tab-panel" id="tab-graficos">
+<div class="charts-wrap">
+  <div class="chart-grid">
+    <div class="chart-card full">
+      <div class="chart-title">🟢 <span>Cazé TV</span> — Espectadores Simultâneos por Jogo</div>
+      <div class="chart-container tall"><canvas id="chartCaze"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📡 <span style="color:#4FC3F7">Globo</span> — Alcance por Jogo (mi)</div>
+      <div class="chart-container"><canvas id="chartGlobo"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📡 <span style="color:#7B61FF">SporTV</span> — Alcance por Jogo (mi)</div>
+      <div class="chart-container"><canvas id="chartSportv"></canvas></div>
+    </div>
+    <div class="chart-card full">
+      <div class="chart-title">📊 Comparativo — <span>Cazé TV</span> vs <span style="color:#4FC3F7">Globo</span> vs <span style="color:#7B61FF">SporTV</span> (mi)</div>
+      <div class="chart-container"><canvas id="chartComp"></canvas></div>
+    </div>
+  </div>
+</div>
+</div><!-- /tab-graficos -->
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-left">
+    <span class="accent">Metodologia:</span> <strong>Cazé TV (Simult.)</strong> = pico de espectadores simultâneos no YouTube durante a transmissão ao vivo (dado de audiência comparável ao IBOPE).<br>
+    <strong>Alcance Globo/SporTV</strong> = pessoas únicas que assistiram qualquer parte da transmissão (Kantar IBOPE). Métrica acumulada por jogo.<br>
+    Fontes: Kantar IBOPE. Monitoramento automático a cada hora (13h–02h BRT).
+  </div>
+  <div class="footer-right">
+    Copa do Mundo FIFA™ 2026 | EUA, Canadá & México<br>
+    <span class="accent">Grupo GPAC</span> — uso interno
+  </div>
+</div>
+
+<script>
+// ========================= DATA =========================
+// Loaded from JSON file; hardcoded here for offline use
+const SCHEDULE = [
+  {id:1,fase:"Grupos",rodada:"1ª Rodada",grupo:"A",data:"2026-06-11",hora:"16:00",t1:"México",t2:"África do Sul",cidade:"Cidade do México",status:"encerrado",video_id:null,audiencia_sim:5400000,globo_pts:20.0,sbt_pts:4.18,brasil:false,globo_alc:29.9,sportv_alc:1.5},
+  {id:2,fase:"Grupos",rodada:"1ª Rodada",grupo:"A",data:"2026-06-11",hora:"23:00",t1:"Coreia do Sul",t2:"Rep. Tcheca",cidade:"Guadalajara",status:"encerrado",video_id:"LjEP9frJ2CE",audiencia_sim:4300000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:3,fase:"Grupos",rodada:"1ª Rodada",grupo:"B",data:"2026-06-12",hora:"16:00",t1:"Canadá",t2:"Bósnia-Herzegovina",cidade:"Toronto",status:"encerrado",video_id:null,audiencia_sim:4500000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:4,fase:"Grupos",rodada:"1ª Rodada",grupo:"D",data:"2026-06-12",hora:"22:00",t1:"EUA",t2:"Paraguai",cidade:"Los Angeles",status:"encerrado",video_id:null,audiencia_sim:4850000,globo_pts:11.0,sbt_pts:2.5,brasil:false,globo_alc:25.9,sportv_alc:1.8},
+  {id:5,fase:"Grupos",rodada:"1ª Rodada",grupo:"B",data:"2026-06-13",hora:"16:00",t1:"Qatar",t2:"Suíça",cidade:"San Francisco",status:"encerrado",video_id:null,audiencia_sim:5000000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:6,fase:"Grupos",rodada:"1ª Rodada",grupo:"C",data:"2026-06-13",hora:"19:00",t1:"Brasil",t2:"Marrocos",cidade:"Nova York/NJ",status:"encerrado",video_id:null,audiencia_sim:12700000,globo_pts:32.0,sbt_pts:6.0,brasil:true,globo_alc:41.8,sportv_alc:2.7,sbt_alc:8.0},
+  {id:7,fase:"Grupos",rodada:"1ª Rodada",grupo:"C",data:"2026-06-13",hora:"22:00",t1:"Haiti",t2:"Escócia",cidade:"Boston",status:"encerrado",video_id:null,audiencia_sim:4250000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:8,fase:"Grupos",rodada:"1ª Rodada",grupo:"D",data:"2026-06-14",hora:"01:00",t1:"Austrália",t2:"Turquia",cidade:"Vancouver",status:"encerrado",video_id:null,audiencia_sim:1200000,globo_pts:5.5,sbt_pts:null,brasil:false,globo_alc:8.4,sportv_alc:0.4408},
+  {id:9,fase:"Grupos",rodada:"1ª Rodada",grupo:"E",data:"2026-06-14",hora:"14:00",t1:"Alemanha",t2:"Curaçao",cidade:"Houston",status:"encerrado",video_id:null,audiencia_sim:6000000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:10,fase:"Grupos",rodada:"1ª Rodada",grupo:"F",data:"2026-06-14",hora:"17:00",t1:"Países Baixos",t2:"Japão",cidade:"Dallas",status:"encerrado",video_id:null,audiencia_sim:4750000,globo_pts:10.0,sbt_pts:2.0,brasil:false,globo_alc:24.0,sportv_alc:2.23},
+  {id:11,fase:"Grupos",rodada:"1ª Rodada",grupo:"E",data:"2026-06-14",hora:"20:00",t1:"Costa do Marfim",t2:"Equador",cidade:"Philadelphia",status:"encerrado",video_id:null,audiencia_sim:4450000,globo_pts:9.0,sbt_pts:null,brasil:false,globo_alc:27.4,sportv_alc:2.6},
+  {id:12,fase:"Grupos",rodada:"1ª Rodada",grupo:"F",data:"2026-06-14",hora:"23:00",t1:"Suécia",t2:"Tunísia",cidade:"Monterrey",status:"encerrado",video_id:null,audiencia_sim:4300000,globo_pts:7.0,sbt_pts:null,brasil:false,globo_alc:16.4,sportv_alc:0.83},
+  {id:13,fase:"Grupos",rodada:"1ª Rodada",grupo:"H",data:"2026-06-15",hora:"13:00",t1:"Espanha",t2:"Cabo Verde",cidade:"Atlanta",status:"encerrado",video_id:null,audiencia_sim:5200000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:14,fase:"Grupos",rodada:"1ª Rodada",grupo:"G",data:"2026-06-15",hora:"16:00",t1:"Bélgica",t2:"Egito",cidade:"Seattle",status:"encerrado",video_id:"EYStZQ5FsVk",audiencia_sim:6100000,globo_pts:null,sbt_pts:null,brasil:false,globo_alc:17.0,sportv_alc:1.8},
+  {id:15,fase:"Grupos",rodada:"1ª Rodada",grupo:"H",data:"2026-06-15",hora:"19:00",t1:"Arábia Saudita",t2:"Uruguai",cidade:"Miami",status:"encerrado",video_id:null,audiencia_sim:6600000,globo_pts:null,sbt_pts:null,brasil:false,globo_alc:20.4,sportv_alc:2.3},
+  {id:16,fase:"Grupos",rodada:"1ª Rodada",grupo:"G",data:"2026-06-15",hora:"22:00",t1:"Irã",t2:"Nova Zelândia",cidade:"Los Angeles",status:"encerrado",video_id:null,audiencia_sim:4600000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:17,fase:"Grupos",rodada:"1ª Rodada",grupo:"I",data:"2026-06-16",hora:"16:00",t1:"França",t2:"Senegal",cidade:"Nova York/NJ",status:"encerrado",video_id:null,audiencia_sim:7800000,globo_alc:17.0,sportv_alc:0.855,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:18,fase:"Grupos",rodada:"1ª Rodada",grupo:"I",data:"2026-06-16",hora:"19:00",t1:"Iraque",t2:"Noruega",cidade:"Boston",status:"encerrado",video_id:null,audiencia_sim:7200000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:19,fase:"Grupos",rodada:"1ª Rodada",grupo:"J",data:"2026-06-16",hora:"22:00",t1:"Argentina",t2:"Argélia",cidade:"Kansas City",status:"encerrado",video_id:null,audiencia_sim:11500000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:20,fase:"Grupos",rodada:"1ª Rodada",grupo:"J",data:"2026-06-17",hora:"01:00",t1:"Áustria",t2:"Jordânia",cidade:"San Francisco",status:"encerrado",video_id:null,audiencia_sim:1100000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:21,fase:"Grupos",rodada:"1ª Rodada",grupo:"K",data:"2026-06-17",hora:"14:00",t1:"Portugal",t2:"Congo (RD)",cidade:"Houston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:22,fase:"Grupos",rodada:"1ª Rodada",grupo:"L",data:"2026-06-17",hora:"17:00",t1:"Inglaterra",t2:"Croácia",cidade:"Dallas",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:23,fase:"Grupos",rodada:"1ª Rodada",grupo:"L",data:"2026-06-17",hora:"20:00",t1:"Gana",t2:"Panamá",cidade:"Toronto",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:24,fase:"Grupos",rodada:"1ª Rodada",grupo:"K",data:"2026-06-17",hora:"23:00",t1:"Uzbequistão",t2:"Colômbia",cidade:"Cidade do México",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:25,fase:"Grupos",rodada:"2ª Rodada",grupo:"A",data:"2026-06-18",hora:"13:00",t1:"Rep. Tcheca",t2:"África do Sul",cidade:"Atlanta",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:26,fase:"Grupos",rodada:"2ª Rodada",grupo:"B",data:"2026-06-18",hora:"16:00",t1:"Suíça",t2:"Bósnia-Herzegovina",cidade:"Los Angeles",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:27,fase:"Grupos",rodada:"2ª Rodada",grupo:"B",data:"2026-06-18",hora:"19:00",t1:"Canadá",t2:"Qatar",cidade:"Vancouver",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:28,fase:"Grupos",rodada:"2ª Rodada",grupo:"A",data:"2026-06-18",hora:"22:00",t1:"México",t2:"Coreia do Sul",cidade:"Guadalajara",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:29,fase:"Grupos",rodada:"2ª Rodada",grupo:"D",data:"2026-06-19",hora:"16:00",t1:"EUA",t2:"Austrália",cidade:"Seattle",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:30,fase:"Grupos",rodada:"2ª Rodada",grupo:"C",data:"2026-06-19",hora:"19:00",t1:"Escócia",t2:"Marrocos",cidade:"Boston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:31,fase:"Grupos",rodada:"2ª Rodada",grupo:"C",data:"2026-06-19",hora:"21:30",t1:"Brasil",t2:"Haiti",cidade:"Philadelphia",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:true},
+  {id:32,fase:"Grupos",rodada:"2ª Rodada",grupo:"D",data:"2026-06-20",hora:"00:00",t1:"Turquia",t2:"Paraguai",cidade:"San Francisco",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:33,fase:"Grupos",rodada:"2ª Rodada",grupo:"F",data:"2026-06-20",hora:"14:00",t1:"Países Baixos",t2:"Suécia",cidade:"Houston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:34,fase:"Grupos",rodada:"2ª Rodada",grupo:"E",data:"2026-06-20",hora:"17:00",t1:"Alemanha",t2:"Costa do Marfim",cidade:"Toronto",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:35,fase:"Grupos",rodada:"2ª Rodada",grupo:"E",data:"2026-06-20",hora:"21:00",t1:"Equador",t2:"Curaçao",cidade:"Kansas City",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:36,fase:"Grupos",rodada:"2ª Rodada",grupo:"F",data:"2026-06-21",hora:"01:00",t1:"Tunísia",t2:"Japão",cidade:"Monterrey",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:37,fase:"Grupos",rodada:"2ª Rodada",grupo:"H",data:"2026-06-21",hora:"13:00",t1:"Espanha",t2:"Arábia Saudita",cidade:"Atlanta",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:38,fase:"Grupos",rodada:"2ª Rodada",grupo:"G",data:"2026-06-21",hora:"16:00",t1:"Bélgica",t2:"Irã",cidade:"Los Angeles",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:39,fase:"Grupos",rodada:"2ª Rodada",grupo:"H",data:"2026-06-21",hora:"19:00",t1:"Uruguai",t2:"Cabo Verde",cidade:"Miami",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:40,fase:"Grupos",rodada:"2ª Rodada",grupo:"G",data:"2026-06-21",hora:"22:00",t1:"Nova Zelândia",t2:"Egito",cidade:"Vancouver",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:41,fase:"Grupos",rodada:"2ª Rodada",grupo:"J",data:"2026-06-22",hora:"14:00",t1:"Argentina",t2:"Áustria",cidade:"Dallas",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:42,fase:"Grupos",rodada:"2ª Rodada",grupo:"I",data:"2026-06-22",hora:"18:00",t1:"França",t2:"Iraque",cidade:"Philadelphia",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:43,fase:"Grupos",rodada:"2ª Rodada",grupo:"I",data:"2026-06-22",hora:"21:00",t1:"Noruega",t2:"Senegal",cidade:"Nova York/NJ",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:44,fase:"Grupos",rodada:"2ª Rodada",grupo:"J",data:"2026-06-23",hora:"00:00",t1:"Jordânia",t2:"Argélia",cidade:"San Francisco",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:45,fase:"Grupos",rodada:"2ª Rodada",grupo:"K",data:"2026-06-23",hora:"14:00",t1:"Portugal",t2:"Uzbequistão",cidade:"Houston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:46,fase:"Grupos",rodada:"2ª Rodada",grupo:"L",data:"2026-06-23",hora:"17:00",t1:"Inglaterra",t2:"Gana",cidade:"Boston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:47,fase:"Grupos",rodada:"2ª Rodada",grupo:"L",data:"2026-06-23",hora:"20:00",t1:"Panamá",t2:"Croácia",cidade:"Toronto",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:48,fase:"Grupos",rodada:"2ª Rodada",grupo:"K",data:"2026-06-23",hora:"23:00",t1:"Colômbia",t2:"Congo (RD)",cidade:"Guadalajara",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:49,fase:"Grupos",rodada:"3ª Rodada",grupo:"B",data:"2026-06-24",hora:"16:00",t1:"Suíça",t2:"Canadá",cidade:"Vancouver",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:50,fase:"Grupos",rodada:"3ª Rodada",grupo:"B",data:"2026-06-24",hora:"16:00",t1:"Bósnia-Herzegovina",t2:"Qatar",cidade:"Seattle",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:51,fase:"Grupos",rodada:"3ª Rodada",grupo:"C",data:"2026-06-24",hora:"19:00",t1:"Escócia",t2:"Brasil",cidade:"Miami",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:true},
+  {id:52,fase:"Grupos",rodada:"3ª Rodada",grupo:"C",data:"2026-06-24",hora:"19:00",t1:"Marrocos",t2:"Haiti",cidade:"Atlanta",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:53,fase:"Grupos",rodada:"3ª Rodada",grupo:"A",data:"2026-06-24",hora:"22:00",t1:"Rep. Tcheca",t2:"México",cidade:"Cidade do México",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:54,fase:"Grupos",rodada:"3ª Rodada",grupo:"A",data:"2026-06-24",hora:"22:00",t1:"África do Sul",t2:"Coreia do Sul",cidade:"Monterrey",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:55,fase:"Grupos",rodada:"3ª Rodada",grupo:"E",data:"2026-06-25",hora:"17:00",t1:"Curaçao",t2:"Costa do Marfim",cidade:"Philadelphia",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:56,fase:"Grupos",rodada:"3ª Rodada",grupo:"E",data:"2026-06-25",hora:"17:00",t1:"Equador",t2:"Alemanha",cidade:"Nova York/NJ",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:57,fase:"Grupos",rodada:"3ª Rodada",grupo:"F",data:"2026-06-25",hora:"20:00",t1:"Japão",t2:"Suécia",cidade:"Dallas",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:58,fase:"Grupos",rodada:"3ª Rodada",grupo:"F",data:"2026-06-25",hora:"20:00",t1:"Tunísia",t2:"Países Baixos",cidade:"Kansas City",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:59,fase:"Grupos",rodada:"3ª Rodada",grupo:"D",data:"2026-06-25",hora:"23:00",t1:"Turquia",t2:"EUA",cidade:"Los Angeles",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:60,fase:"Grupos",rodada:"3ª Rodada",grupo:"D",data:"2026-06-25",hora:"23:00",t1:"Paraguai",t2:"Austrália",cidade:"San Francisco",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:61,fase:"Grupos",rodada:"3ª Rodada",grupo:"I",data:"2026-06-26",hora:"16:00",t1:"Noruega",t2:"França",cidade:"Boston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:62,fase:"Grupos",rodada:"3ª Rodada",grupo:"I",data:"2026-06-26",hora:"16:00",t1:"Senegal",t2:"Iraque",cidade:"Toronto",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:63,fase:"Grupos",rodada:"3ª Rodada",grupo:"H",data:"2026-06-26",hora:"21:00",t1:"Cabo Verde",t2:"Arábia Saudita",cidade:"Houston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:64,fase:"Grupos",rodada:"3ª Rodada",grupo:"H",data:"2026-06-26",hora:"21:00",t1:"Uruguai",t2:"Espanha",cidade:"Guadalajara",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:65,fase:"Grupos",rodada:"3ª Rodada",grupo:"G",data:"2026-06-27",hora:"00:00",t1:"Egito",t2:"Irã",cidade:"Seattle",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:66,fase:"Grupos",rodada:"3ª Rodada",grupo:"G",data:"2026-06-27",hora:"00:00",t1:"Nova Zelândia",t2:"Bélgica",cidade:"Vancouver",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:67,fase:"Grupos",rodada:"3ª Rodada",grupo:"L",data:"2026-06-27",hora:"18:00",t1:"Panamá",t2:"Inglaterra",cidade:"Nova York/NJ",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:68,fase:"Grupos",rodada:"3ª Rodada",grupo:"L",data:"2026-06-27",hora:"18:00",t1:"Croácia",t2:"Gana",cidade:"Philadelphia",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:69,fase:"Grupos",rodada:"3ª Rodada",grupo:"K",data:"2026-06-27",hora:"20:30",t1:"Colômbia",t2:"Portugal",cidade:"Miami",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:70,fase:"Grupos",rodada:"3ª Rodada",grupo:"K",data:"2026-06-27",hora:"20:30",t1:"Congo (RD)",t2:"Uzbequistão",cidade:"Atlanta",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:71,fase:"Grupos",rodada:"3ª Rodada",grupo:"J",data:"2026-06-27",hora:"23:00",t1:"Argélia",t2:"Áustria",cidade:"Kansas City",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:72,fase:"Grupos",rodada:"3ª Rodada",grupo:"J",data:"2026-06-27",hora:"23:00",t1:"Jordânia",t2:"Argentina",cidade:"Dallas",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:73,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-28",hora:"16:00",t1:"A definir",t2:"A definir",cidade:"Los Angeles",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:74,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-29",hora:"14:00",t1:"A definir",t2:"A definir",cidade:"Houston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:75,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-29",hora:"17:30",t1:"A definir",t2:"A definir",cidade:"Boston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:76,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-29",hora:"22:00",t1:"A definir",t2:"A definir",cidade:"Monterrey",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:77,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-30",hora:"14:00",t1:"A definir",t2:"A definir",cidade:"Dallas",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:78,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-30",hora:"18:00",t1:"A definir",t2:"A definir",cidade:"Nova York/NJ",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:79,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-30",hora:"22:00",t1:"A definir",t2:"A definir",cidade:"Cidade do México",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:80,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-07-01",hora:"13:00",t1:"A definir",t2:"A definir",cidade:"Atlanta",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:81,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-07-01",hora:"17:00",t1:"A definir",t2:"A definir",cidade:"Seattle",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:82,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-07-01",hora:"21:00",t1:"A definir",t2:"A definir",cidade:"San Francisco",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:83,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-07-02",hora:"16:00",t1:"A definir",t2:"A definir",cidade:"Los Angeles",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:84,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-07-02",hora:"20:00",t1:"A definir",t2:"A definir",cidade:"Toronto",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:85,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-07-03",hora:"00:00",t1:"A definir",t2:"A definir",cidade:"Vancouver",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:86,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-07-03",hora:"15:00",t1:"A definir",t2:"A definir",cidade:"Dallas",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:87,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-07-03",hora:"17:00",t1:"A definir",t2:"A definir",cidade:"Atlanta",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:88,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-07-03",hora:"22:30",t1:"A definir",t2:"A definir",cidade:"Kansas City",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:89,fase:"Oitavas",rodada:"Oitavas de Final",grupo:"",data:"2026-07-04",hora:"14:00",t1:"A definir",t2:"A definir",cidade:"Houston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:90,fase:"Oitavas",rodada:"Oitavas de Final",grupo:"",data:"2026-07-04",hora:"18:00",t1:"A definir",t2:"A definir",cidade:"Philadelphia",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:91,fase:"Oitavas",rodada:"Oitavas de Final",grupo:"",data:"2026-07-05",hora:"17:00",t1:"A definir",t2:"A definir",cidade:"Nova York/NJ",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:92,fase:"Oitavas",rodada:"Oitavas de Final",grupo:"",data:"2026-07-05",hora:"21:00",t1:"A definir",t2:"A definir",cidade:"Cidade do México",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:93,fase:"Oitavas",rodada:"Oitavas de Final",grupo:"",data:"2026-07-06",hora:"15:00",t1:"A definir",t2:"A definir",cidade:"Dallas",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:94,fase:"Oitavas",rodada:"Oitavas de Final",grupo:"",data:"2026-07-06",hora:"20:00",t1:"A definir",t2:"A definir",cidade:"Seattle",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:95,fase:"Oitavas",rodada:"Oitavas de Final",grupo:"",data:"2026-07-07",hora:"13:00",t1:"A definir",t2:"A definir",cidade:"Atlanta",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:96,fase:"Oitavas",rodada:"Oitavas de Final",grupo:"",data:"2026-07-07",hora:"17:00",t1:"A definir",t2:"A definir",cidade:"Vancouver",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:97,fase:"Quartas",rodada:"Quartas de Final",grupo:"",data:"2026-07-09",hora:"17:00",t1:"A definir",t2:"A definir",cidade:"Boston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:98,fase:"Quartas",rodada:"Quartas de Final",grupo:"",data:"2026-07-10",hora:"16:00",t1:"A definir",t2:"A definir",cidade:"Los Angeles",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:99,fase:"Quartas",rodada:"Quartas de Final",grupo:"",data:"2026-07-11",hora:"18:00",t1:"A definir",t2:"A definir",cidade:"Miami",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:100,fase:"Quartas",rodada:"Quartas de Final",grupo:"",data:"2026-07-11",hora:"21:00",t1:"A definir",t2:"A definir",cidade:"Kansas City",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:101,fase:"Semifinal",rodada:"Semifinal",grupo:"",data:"2026-07-14",hora:"16:00",t1:"A definir",t2:"A definir",cidade:"Dallas",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:102,fase:"Semifinal",rodada:"Semifinal",grupo:"",data:"2026-07-15",hora:"16:00",t1:"A definir",t2:"A definir",cidade:"Dallas",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:103,fase:"3 Lugar",rodada:"3º Lugar",grupo:"",data:"2026-07-18",hora:"18:00",t1:"A definir",t2:"A definir",cidade:"Miami",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:104,fase:"Final",rodada:"GRANDE FINAL",grupo:"",data:"2026-07-19",hora:"16:00",t1:"A definir",t2:"A definir",cidade:"Nova York/NJ",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false}
+];
+
+// ========================= HELPERS =========================
+function fmtViews(n) {
+  if (!n) return null;
+  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0) + 'K';
+  return n.toString();
+}
+function fmtDate(d) {
+  const [y,m,day] = d.split('-');
+  const months = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const dt = new Date(y, m-1, day);
+  return `${days[dt.getDay()]} ${parseInt(day)} ${months[parseInt(m)]}`;
+}
+function maxAud() {
+  return Math.max(...SCHEDULE.filter(g=>g.audiencia_sim).map(g=>g.audiencia_sim), 1);
+}
+
+// ========================= RENDER =========================
+let activePhase = 'all', activeStatus = null;
+
+function filterPhase(f, btn) {
+  activePhase = f; activeStatus = null;
+  document.querySelectorAll('[data-filter]').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('[data-status]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+function filterStatus(s, btn) {
+  activeStatus = btn.classList.contains('active') ? null : s;
+  activePhase = 'all';
+  document.querySelectorAll('[data-filter]').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('[data-status]').forEach(b=>b.classList.remove('active'));
+  if (activeStatus) { btn.classList.add('active'); document.querySelector('[data-filter="all"]').classList.remove('active'); }
+  else document.querySelector('[data-filter="all"]').classList.add('active');
+  renderTable();
+}
+
+function passesFilter(g) {
+  if (activeStatus === 'encerrado') return g.status === 'encerrado';
+  if (activeStatus === 'brasil') return g.brasil;
+  if (activeStatus === 'com_dados') return g.audiencia_sim !== null;
+  if (activePhase !== 'all') return g.fase === activePhase;
+  return true;
+}
+
+function renderTable() {
+  const wrap = document.getElementById('tableWrap');
+  const data = SCHEDULE.filter(passesFilter);
+  if (!data.length) { wrap.innerHTML = '<div style="padding:40px;text-align:center;color:#8B949E">Nenhum jogo encontrado para este filtro.</div>'; return; }
+
+  const phases = [...new Set(data.map(g=>g.rodada))];
+  let html = '';
+
+  phases.forEach(phase => {
+    const games = data.filter(g=>g.rodada===phase);
+    html += `
+    <div class="phase-header">
+      <span class="phase-title">${phase}</span>
+      <span class="phase-line"></span>
+      <span class="phase-count">${games.length} jogo${games.length!==1?'s':''}</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th style="width:36px">#</th>
+        <th>Partida</th>
+        <th>Grupo</th>
+        <th>Data & Hora (BRT)</th>
+        <th class="th-city">Cidade</th>
+        <th>Status</th>
+        <th title="Pico de espectadores simultâneos no YouTube (Cazé TV)">🟢 Cazé TV (Simult.)</th>
+        <th title="Alcance único Globo em milhões de pessoas — Kantar IBOPE">📡 Globo Alcance</th>
+        <th title="Alcance único SporTV em milhões de pessoas — Kantar IBOPE">📡 SporTV Alcance</th>
+        <th title="Alcance único SBT em milhões de pessoas — Kantar IBOPE">📡 SBT Alcance</th>
+      </tr></thead>
+      <tbody>`;
+
+    games.forEach(g => {
+      const isBrasil = g.brasil;
+      const hasAud = g.audiencia_sim !== null;
+
+      let statusBadge = '';
+      if (g.status === 'encerrado') statusBadge = `<span class="status encerrado"><span class="dot"></span>Encerrado</span>`;
+      else if (g.status === 'live' || g.status === 'ao_vivo') statusBadge = `<span class="status live"><span class="dot"></span>AO VIVO 🔴</span>`;
+      else statusBadge = `<span class="status pendente"><span class="dot"></span>Aguardando</span>`;
+
+      // Cazé TV simultaneous viewers
+      let cazeHtml = '';
+      if (hasAud) {
+        cazeHtml = `<div class="views">${fmtViews(g.audiencia_sim)}</div><div class="views-sub">espect. simultâneos</div>`;
+      } else if (g.status === 'encerrado') {
+        cazeHtml = `<span class="views-none" style="color:#555;font-size:10px">DADO INDISP.</span>`;
+      } else if (g.status === 'ao_vivo' || g.status === 'live') {
+        cazeHtml = `<span class="views-none" style="color:#FF4444;font-size:10px">AO VIVO</span>`;
+      } else {
+        cazeHtml = `<span class="views-none">—</span>`;
+      }
+
+
+
+
+      // Alcance Globo (Kantar)
+      let alcGloboHtml = '';
+      if (g.globo_alc !== undefined && g.globo_alc !== null) {
+        alcGloboHtml = `<div class="views" style="color:#4FC3F7;font-size:13px">${g.globo_alc} mi</div><div class="views-sub">alcance</div>`;
+      } else if (g.status === 'encerrado') {
+        alcGloboHtml = `<span class="views-none" style="font-size:10px">—</span>`;
+      } else {
+        alcGloboHtml = `<span class="views-none">—</span>`;
+      }
+
+      // Alcance SporTV (Kantar)
+      let alcSportvHtml = '';
+      if (g.sportv_alc !== undefined && g.sportv_alc !== null) {
+        const sportvVal = g.sportv_alc >= 1 ? g.sportv_alc + ' mi' : (g.sportv_alc * 1000).toFixed(1) + ' mil';
+        alcSportvHtml = `<div class="views" style="color:#7B61FF;font-size:13px">${sportvVal}</div><div class="views-sub">alcance</div>`;
+      } else if (g.status === 'encerrado') {
+        alcSportvHtml = `<span class="views-none" style="font-size:10px">—</span>`;
+      } else {
+        alcSportvHtml = `<span class="views-none">—</span>`;
+      }
+      // Alcance SBT (Kantar)
+      let alcSbtHtml = '';
+      if (g.sbt_alc !== undefined && g.sbt_alc !== null) {
+        const sbtVal = g.sbt_alc >= 1 ? g.sbt_alc + ' mi' : (g.sbt_alc * 1000).toFixed(1) + ' mil';
+        alcSbtHtml = `<div class="views" style="color:#FFB74D;font-size:13px">${sbtVal}</div><div class="views-sub">alcance</div>`;
+      } else if (g.status === 'encerrado') {
+        alcSbtHtml = `<span class="views-none" style="font-size:10px">—</span>`;
+      } else {
+        alcSbtHtml = `<span class="views-none">—</span>`;
+      }
+
+      html += `
+      <tr class="data-row ${isBrasil?'brasil-row':''}">
+        <td style="color:#8B949E;font-size:11px">${g.id}</td>
+        <td class="teams">${isBrasil?'🇧🇷 ':''}${g.t1}<span class="team-vs">vs</span>${g.t2}</td>
+        <td>${g.grupo ? `<span class="grupo">${g.grupo}</span>` : '<span style="color:#555">—</span>'}</td>
+        <td class="datetime"><div class="date">${fmtDate(g.data)}</div><div class="time">${g.hora}</div></td>
+        <td class="city td-city">${g.cidade}</td>
+        <td>${statusBadge}</td>
+        <td class="views-td">${cazeHtml}</td>
+        <td class="views-td">${alcGloboHtml}</td>
+        <td class="views-td">${alcSportvHtml}</td>
+        <td class="views-td">${alcSbtHtml}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table>`;
+  });
+
+  wrap.innerHTML = html;
+}
+
+function updateKPIs() {
+  const enc = SCHEDULE.filter(g=>g.status==='encerrado');
+  const withAud = SCHEDULE.filter(g=>g.audiencia_sim!==null);
+  const top = withAud.length ? withAud.slice().sort((a,b)=>b.audiencia_sim-a.audiencia_sim)[0] : null;
+  const media = withAud.length ? Math.round(withAud.reduce((a,g)=>a+g.audiencia_sim,0)/withAud.length) : 0;
+
+  document.getElementById('kpi-encerrados').textContent = enc.length;
+  document.getElementById('kpi-top').textContent = top ? fmtViews(top.audiencia_sim) : '—';
+  document.getElementById('kpi-top-game').textContent = top ? `${top.t1} vs ${top.t2}` : 'pico espectadores simultâneos';
+  document.getElementById('kpi-media').textContent = media ? fmtViews(media) : '—';
+  document.getElementById('lastUpdate').textContent = 'Última atualização: ' + new Date().toLocaleString('pt-BR', {timeZone:'America/Sao_Paulo'});
+
+  // Header CPM médio por canal
+  const COSTS = { caze: 185000000, globo: 265000000, sportv: 52000000, sbt: 626500000 };
+  const fmtCPM = v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  const cazeTot  = SCHEDULE.filter(g=>g.audiencia_sim).reduce((s,g)=>s+g.audiencia_sim, 0);
+  const globoTot = SCHEDULE.filter(g=>g.globo_alc).reduce((s,g)=>s+g.globo_alc, 0) * 1e6;
+  const sportvTot= SCHEDULE.filter(g=>g.sportv_alc).reduce((s,g)=>s+g.sportv_alc, 0) * 1e6;
+  const sbtTot   = SCHEDULE.filter(g=>g.sbt_alc).reduce((s,g)=>s+g.sbt_alc, 0) * 1e6;
+
+  document.getElementById('hs-caze').textContent   = cazeTot   ? fmtCPM((COSTS.caze   / cazeTot)   * 1000) : '—';
+  document.getElementById('hs-globo').textContent  = globoTot  ? fmtCPM((COSTS.globo  / globoTot)  * 1000) : '—';
+  document.getElementById('hs-sportv').textContent = sportvTot ? fmtCPM((COSTS.sportv / sportvTot) * 1000) : '—';
+  document.getElementById('hs-sbt').textContent    = sbtTot    ? fmtCPM((COSTS.sbt    / sbtTot)    * 1000) : '—';
+  document.getElementById('hs-sportv-gpac').textContent = sportvTot ? fmtCPM((1244464 / sportvTot) * 1000) : '—';
+
+  // Médias por jogo no header
+  const cazeN   = SCHEDULE.filter(g=>g.audiencia_sim).length;
+  const globoN  = SCHEDULE.filter(g=>g.globo_alc).length;
+  const sportvN = SCHEDULE.filter(g=>g.sportv_alc).length;
+  document.getElementById('hs-med-caze').textContent   = cazeN   ? fmtViews(Math.round(cazeTot / cazeN))                    : '—';
+  document.getElementById('hs-med-globo').textContent  = globoN  ? (globoTot  / 1e6 / globoN).toFixed(1)  + ' mi'           : '—';
+  document.getElementById('hs-med-sportv').textContent = sportvN ? (sportvTot / 1e6 / sportvN).toFixed(2) + ' mi'           : '—';
+}
+
+// INIT
+updateKPIs();
+renderTable();
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'graficos' && !window._chartsBuilt) buildCharts();
+}
+
+function buildCharts() {
+  window._chartsBuilt = true;
+  const enc = SCHEDULE.filter(g => g.audiencia_sim != null);
+  const labels = enc.map(g => g.t1.split(' ')[0] + ' x ' + g.t2.split(' ')[0]);
+
+  // Brasil highlight colors for Cazé TV
+  const cazeBg = enc.map(g => g.brasil ? 'rgba(255,215,0,0.85)' : 'rgba(170,220,50,0.75)');
+  const cazeBorder = enc.map(g => g.brasil ? '#FFD700' : '#AADC32');
+
+  const baseOpts = (color) => ({
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: {
+      labelColor: () => ({ backgroundColor: color })
+    }}},
+    scales: {
+      x: { ticks: { color: '#8B949E', font: { size: 10 }, maxRotation: 45 }, grid: { color: '#21262D' } },
+      y: { ticks: { color: '#8B949E', font: { size: 10 } }, grid: { color: '#21262D' } }
+    }
+  });
+
+  // Cazé TV chart
+  new Chart(document.getElementById('chartCaze'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: enc.map(g => g.audiencia_sim / 1e6),
+        backgroundColor: cazeBg,
+        borderColor: cazeBorder,
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      ...baseOpts('#AADC32'),
+      plugins: {
+        ...baseOpts('#AADC32').plugins,
+        tooltip: { callbacks: {
+          label: ctx => ctx.parsed.y.toFixed(1) + 'M espect. simultâneos'
+        }}
+      },
+      scales: {
+        x: baseOpts().scales?.x || { ticks: { color: '#8B949E', font: { size: 10 }, maxRotation: 45 }, grid: { color: '#21262D' } },
+        y: { ticks: { color: '#8B949E', font: { size: 10 }, callback: v => v.toFixed(1) + 'M' }, grid: { color: '#21262D' } }
+      }
+    }
+  });
+
+  // Globo chart
+  const gEnc = SCHEDULE.filter(g => g.globo_alc != null);
+  const gLabels = gEnc.map(g => g.t1.split(' ')[0] + ' x ' + g.t2.split(' ')[0]);
+  new Chart(document.getElementById('chartGlobo'), {
+    type: 'bar',
+    data: {
+      labels: gLabels,
+      datasets: [{
+        data: gEnc.map(g => g.globo_alc),
+        backgroundColor: 'rgba(79,195,247,0.7)',
+        borderColor: '#4FC3F7', borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1) + ' mi alcance' }}},
+      scales: {
+        x: { ticks: { color: '#8B949E', font: { size: 9 }, maxRotation: 45 }, grid: { color: '#21262D' } },
+        y: { ticks: { color: '#8B949E', font: { size: 10 }, callback: v => v + 'mi' }, grid: { color: '#21262D' } }
+      }
+    }
+  });
+
+  // SporTV chart
+  const sEnc = SCHEDULE.filter(g => g.sportv_alc != null);
+  const sLabels = sEnc.map(g => g.t1.split(' ')[0] + ' x ' + g.t2.split(' ')[0]);
+  new Chart(document.getElementById('chartSportv'), {
+    type: 'bar',
+    data: {
+      labels: sLabels,
+      datasets: [{
+        data: sEnc.map(g => g.sportv_alc),
+        backgroundColor: 'rgba(123,97,255,0.7)',
+        borderColor: '#7B61FF', borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + ' mi alcance' }}},
+      scales: {
+        x: { ticks: { color: '#8B949E', font: { size: 9 }, maxRotation: 45 }, grid: { color: '#21262D' } },
+        y: { ticks: { color: '#8B949E', font: { size: 10 }, callback: v => v + 'mi' }, grid: { color: '#21262D' } }
+      }
+    }
+  });
+
+  // Comparative chart Cazé TV vs Globo vs SporTV
+  const compGames = SCHEDULE.filter(g => g.audiencia_sim != null && g.globo_alc != null && g.sportv_alc != null);
+  const compLabels = compGames.map(g => g.t1.split(' ')[0] + ' x ' + g.t2.split(' ')[0]);
+  new Chart(document.getElementById('chartComp'), {
+    type: 'bar',
+    data: {
+      labels: compLabels,
+      datasets: [
+        {
+          label: 'Cazé TV (simult.)',
+          data: compGames.map(g => g.audiencia_sim != null ? +(g.audiencia_sim / 1e6).toFixed(2) : null),
+          backgroundColor: 'rgba(170,220,50,0.75)',
+          borderColor: '#AADC32', borderWidth: 1, borderRadius: 4
+        },
+        {
+          label: 'Globo (alcance)',
+          data: compGames.map(g => g.globo_alc != null ? g.globo_alc : null),
+          backgroundColor: 'rgba(79,195,247,0.7)',
+          borderColor: '#4FC3F7', borderWidth: 1, borderRadius: 4
+        },
+        {
+          label: 'SporTV (alcance)',
+          data: compGames.map(g => g.sportv_alc != null ? g.sportv_alc : null),
+          backgroundColor: 'rgba(123,97,255,0.7)',
+          borderColor: '#7B61FF', borderWidth: 1, borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, labels: { color: '#8B949E', font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' mi' : '—') }}
+      },
+      scales: {
+        x: { ticks: { color: '#8B949E', font: { size: 9 }, maxRotation: 45 }, grid: { color: '#21262D' } },
+        y: { ticks: { color: '#8B949E', font: { size: 10 }, callback: v => v + ' mi' }, grid: { color: '#21262D' } }
+      }
+    }
+  });
+}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+
+</body>
+</html>
