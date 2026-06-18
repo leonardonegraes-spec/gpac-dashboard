@@ -104,6 +104,16 @@
   tr.brasil-row:hover { background: rgba(255,215,0,0.08); }
   tr.brasil-row td.teams { border-left: 3px solid var(--brasil); }
 
+  /* CazéTV exclusivo */
+  .badge-caze-ex {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: rgba(170,220,50,.15); border: 1px solid rgba(170,220,50,.35);
+    color: var(--accent); border-radius: 3px; padding: 1px 6px;
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+    vertical-align: middle; margin-left: 7px; white-space: nowrap;
+  }
+  tr.caze-ex-row td.teams { border-left: 3px solid var(--accent); }
+
   /* Status badges */
   .status {
     display: inline-flex; align-items: center; gap: 5px;
@@ -333,6 +343,7 @@
   <button class="filter-btn" data-status="encerrado" onclick="filterStatus('encerrado',this)">✓ Encerrados</button>
   <button class="filter-btn" data-status="brasil" onclick="filterStatus('brasil',this)">🇧🇷 Brasil</button>
   <button class="filter-btn" data-status="com_dados" onclick="filterStatus('com_dados',this)">📊 Com dados</button>
+  <button class="filter-btn" data-status="caze_exclusivo" onclick="filterStatus('caze_exclusivo',this)" style="border-color:rgba(170,220,50,.4)">◉ Só Exclusivos CazéTV</button>
 </div>
 
 <!-- TABLE -->
@@ -384,52 +395,52 @@
 // Loaded from JSON file; hardcoded here for offline use
 const SCHEDULE = [
   {id:1,fase:"Grupos",rodada:"1ª Rodada",grupo:"A",data:"2026-06-11",hora:"16:00",t1:"México",t2:"África do Sul",cidade:"Cidade do México",status:"encerrado",video_id:null,audiencia_sim:5400000,globo_pts:20.0,sbt_pts:4.18,brasil:false,globo_alc:29.9,sportv_alc:1.5},
-  {id:2,fase:"Grupos",rodada:"1ª Rodada",grupo:"A",data:"2026-06-11",hora:"23:00",t1:"Coreia do Sul",t2:"Rep. Tcheca",cidade:"Guadalajara",status:"encerrado",video_id:"LjEP9frJ2CE",audiencia_sim:4300000,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:3,fase:"Grupos",rodada:"1ª Rodada",grupo:"B",data:"2026-06-12",hora:"16:00",t1:"Canadá",t2:"Bósnia-Herzegovina",cidade:"Toronto",status:"encerrado",video_id:null,audiencia_sim:4500000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:2,fase:"Grupos",rodada:"1ª Rodada",grupo:"A",data:"2026-06-11",hora:"23:00",t1:"Coreia do Sul",t2:"Rep. Tcheca",cidade:"Guadalajara",status:"encerrado",video_id:"LjEP9frJ2CE",audiencia_sim:4300000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
+  {id:3,fase:"Grupos",rodada:"1ª Rodada",grupo:"B",data:"2026-06-12",hora:"16:00",t1:"Canadá",t2:"Bósnia-Herzegovina",cidade:"Toronto",status:"encerrado",video_id:null,audiencia_sim:4500000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:4,fase:"Grupos",rodada:"1ª Rodada",grupo:"D",data:"2026-06-12",hora:"22:00",t1:"EUA",t2:"Paraguai",cidade:"Los Angeles",status:"encerrado",video_id:null,audiencia_sim:4850000,globo_pts:11.0,sbt_pts:2.5,brasil:false,globo_alc:25.9,sportv_alc:1.8},
-  {id:5,fase:"Grupos",rodada:"1ª Rodada",grupo:"B",data:"2026-06-13",hora:"16:00",t1:"Qatar",t2:"Suíça",cidade:"San Francisco",status:"encerrado",video_id:null,audiencia_sim:5000000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:5,fase:"Grupos",rodada:"1ª Rodada",grupo:"B",data:"2026-06-13",hora:"16:00",t1:"Qatar",t2:"Suíça",cidade:"San Francisco",status:"encerrado",video_id:null,audiencia_sim:5000000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:6,fase:"Grupos",rodada:"1ª Rodada",grupo:"C",data:"2026-06-13",hora:"19:00",t1:"Brasil",t2:"Marrocos",cidade:"Nova York/NJ",status:"encerrado",video_id:null,audiencia_sim:12700000,globo_pts:32.0,sbt_pts:6.0,brasil:true,globo_alc:41.8,sportv_alc:2.7,sbt_alc:8.0},
-  {id:7,fase:"Grupos",rodada:"1ª Rodada",grupo:"C",data:"2026-06-13",hora:"22:00",t1:"Haiti",t2:"Escócia",cidade:"Boston",status:"encerrado",video_id:null,audiencia_sim:4250000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:7,fase:"Grupos",rodada:"1ª Rodada",grupo:"C",data:"2026-06-13",hora:"22:00",t1:"Haiti",t2:"Escócia",cidade:"Boston",status:"encerrado",video_id:null,audiencia_sim:4250000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:8,fase:"Grupos",rodada:"1ª Rodada",grupo:"D",data:"2026-06-14",hora:"01:00",t1:"Austrália",t2:"Turquia",cidade:"Vancouver",status:"encerrado",video_id:null,audiencia_sim:1200000,globo_pts:5.5,sbt_pts:null,brasil:false,globo_alc:8.4,sportv_alc:0.4408},
-  {id:9,fase:"Grupos",rodada:"1ª Rodada",grupo:"E",data:"2026-06-14",hora:"14:00",t1:"Alemanha",t2:"Curaçao",cidade:"Houston",status:"encerrado",video_id:null,audiencia_sim:6000000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:9,fase:"Grupos",rodada:"1ª Rodada",grupo:"E",data:"2026-06-14",hora:"14:00",t1:"Alemanha",t2:"Curaçao",cidade:"Houston",status:"encerrado",video_id:null,audiencia_sim:6000000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:10,fase:"Grupos",rodada:"1ª Rodada",grupo:"F",data:"2026-06-14",hora:"17:00",t1:"Países Baixos",t2:"Japão",cidade:"Dallas",status:"encerrado",video_id:null,audiencia_sim:4750000,globo_pts:10.0,sbt_pts:2.0,brasil:false,globo_alc:24.0,sportv_alc:2.23},
   {id:11,fase:"Grupos",rodada:"1ª Rodada",grupo:"E",data:"2026-06-14",hora:"20:00",t1:"Costa do Marfim",t2:"Equador",cidade:"Philadelphia",status:"encerrado",video_id:null,audiencia_sim:4450000,globo_pts:9.0,sbt_pts:null,brasil:false,globo_alc:27.4,sportv_alc:2.6},
   {id:12,fase:"Grupos",rodada:"1ª Rodada",grupo:"F",data:"2026-06-14",hora:"23:00",t1:"Suécia",t2:"Tunísia",cidade:"Monterrey",status:"encerrado",video_id:null,audiencia_sim:4300000,globo_pts:7.0,sbt_pts:null,brasil:false,globo_alc:16.4,sportv_alc:0.83},
-  {id:13,fase:"Grupos",rodada:"1ª Rodada",grupo:"H",data:"2026-06-15",hora:"13:00",t1:"Espanha",t2:"Cabo Verde",cidade:"Atlanta",status:"encerrado",video_id:null,audiencia_sim:5200000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:13,fase:"Grupos",rodada:"1ª Rodada",grupo:"H",data:"2026-06-15",hora:"13:00",t1:"Espanha",t2:"Cabo Verde",cidade:"Atlanta",status:"encerrado",video_id:null,audiencia_sim:5200000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:14,fase:"Grupos",rodada:"1ª Rodada",grupo:"G",data:"2026-06-15",hora:"16:00",t1:"Bélgica",t2:"Egito",cidade:"Seattle",status:"encerrado",video_id:"EYStZQ5FsVk",audiencia_sim:6100000,globo_pts:null,sbt_pts:null,brasil:false,globo_alc:17.0,sportv_alc:1.8},
   {id:15,fase:"Grupos",rodada:"1ª Rodada",grupo:"H",data:"2026-06-15",hora:"19:00",t1:"Arábia Saudita",t2:"Uruguai",cidade:"Miami",status:"encerrado",video_id:null,audiencia_sim:6600000,globo_alc:20.4,sportv_alc:2.3,sbt_alc:2.87,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:16,fase:"Grupos",rodada:"1ª Rodada",grupo:"G",data:"2026-06-15",hora:"22:00",t1:"Irã",t2:"Nova Zelândia",cidade:"Los Angeles",status:"encerrado",video_id:null,audiencia_sim:4600000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:16,fase:"Grupos",rodada:"1ª Rodada",grupo:"G",data:"2026-06-15",hora:"22:00",t1:"Irã",t2:"Nova Zelândia",cidade:"Los Angeles",status:"encerrado",video_id:null,audiencia_sim:4600000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:17,fase:"Grupos",rodada:"1ª Rodada",grupo:"I",data:"2026-06-16",hora:"16:00",t1:"França",t2:"Senegal",cidade:"Nova York/NJ",status:"encerrado",video_id:null,audiencia_sim:7800000,globo_alc:17.0,sportv_alc:0.855,sbt_alc:2.87,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:18,fase:"Grupos",rodada:"1ª Rodada",grupo:"I",data:"2026-06-16",hora:"19:00",t1:"Iraque",t2:"Noruega",cidade:"Boston",status:"encerrado",video_id:null,audiencia_sim:7200000,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:19,fase:"Grupos",rodada:"1ª Rodada",grupo:"J",data:"2026-06-16",hora:"22:00",t1:"Argentina",t2:"Argélia",cidade:"Kansas City",status:"encerrado",video_id:null,audiencia_sim:11500000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:18,fase:"Grupos",rodada:"1ª Rodada",grupo:"I",data:"2026-06-16",hora:"19:00",t1:"Iraque",t2:"Noruega",cidade:"Boston",status:"encerrado",video_id:null,audiencia_sim:7200000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
+  {id:19,fase:"Grupos",rodada:"1ª Rodada",grupo:"J",data:"2026-06-16",hora:"22:00",t1:"Argentina",t2:"Argélia",cidade:"Kansas City",status:"encerrado",video_id:null,audiencia_sim:11500000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:20,fase:"Grupos",rodada:"1ª Rodada",grupo:"J",data:"2026-06-17",hora:"01:00",t1:"Áustria",t2:"Jordânia",cidade:"San Francisco",status:"encerrado",video_id:null,audiencia_sim:1100000,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:21,fase:"Grupos",rodada:"1ª Rodada",grupo:"K",data:"2026-06-17",hora:"14:00",t1:"Portugal",t2:"Congo (RD)",cidade:"Houston",status:"encerrado",video_id:"HpzKFDctbNw",audiencia_sim:10400000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:21,fase:"Grupos",rodada:"1ª Rodada",grupo:"K",data:"2026-06-17",hora:"14:00",t1:"Portugal",t2:"Congo (RD)",cidade:"Houston",status:"encerrado",video_id:"HpzKFDctbNw",audiencia_sim:10400000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:22,fase:"Grupos",rodada:"1ª Rodada",grupo:"L",data:"2026-06-17",hora:"17:00",t1:"Inglaterra",t2:"Croácia",cidade:"Dallas",status:"encerrado",video_id:null,audiencia_sim:7800000,globo_alc:18.5,sportv_alc:0.858,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:23,fase:"Grupos",rodada:"1ª Rodada",grupo:"L",data:"2026-06-17",hora:"20:00",t1:"Gana",t2:"Panamá",cidade:"Toronto",status:"encerrado",video_id:null,audiencia_sim:4200000,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:23,fase:"Grupos",rodada:"1ª Rodada",grupo:"L",data:"2026-06-17",hora:"20:00",t1:"Gana",t2:"Panamá",cidade:"Toronto",status:"encerrado",video_id:null,audiencia_sim:4200000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:24,fase:"Grupos",rodada:"1ª Rodada",grupo:"K",data:"2026-06-17",hora:"23:00",t1:"Uzbequistão",t2:"Colômbia",cidade:"Cidade do México",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:25,fase:"Grupos",rodada:"2ª Rodada",grupo:"A",data:"2026-06-18",hora:"13:00",t1:"Rep. Tcheca",t2:"África do Sul",cidade:"Atlanta",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:25,fase:"Grupos",rodada:"2ª Rodada",grupo:"A",data:"2026-06-18",hora:"13:00",t1:"Rep. Tcheca",t2:"África do Sul",cidade:"Atlanta",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:26,fase:"Grupos",rodada:"2ª Rodada",grupo:"B",data:"2026-06-18",hora:"16:00",t1:"Suíça",t2:"Bósnia-Herzegovina",cidade:"Los Angeles",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:27,fase:"Grupos",rodada:"2ª Rodada",grupo:"B",data:"2026-06-18",hora:"19:00",t1:"Canadá",t2:"Qatar",cidade:"Vancouver",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:27,fase:"Grupos",rodada:"2ª Rodada",grupo:"B",data:"2026-06-18",hora:"19:00",t1:"Canadá",t2:"Qatar",cidade:"Vancouver",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:28,fase:"Grupos",rodada:"2ª Rodada",grupo:"A",data:"2026-06-18",hora:"22:00",t1:"México",t2:"Coreia do Sul",cidade:"Guadalajara",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:29,fase:"Grupos",rodada:"2ª Rodada",grupo:"D",data:"2026-06-19",hora:"16:00",t1:"EUA",t2:"Austrália",cidade:"Seattle",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:30,fase:"Grupos",rodada:"2ª Rodada",grupo:"C",data:"2026-06-19",hora:"19:00",t1:"Escócia",t2:"Marrocos",cidade:"Boston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:29,fase:"Grupos",rodada:"2ª Rodada",grupo:"D",data:"2026-06-19",hora:"16:00",t1:"EUA",t2:"Austrália",cidade:"Seattle",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
+  {id:30,fase:"Grupos",rodada:"2ª Rodada",grupo:"C",data:"2026-06-19",hora:"19:00",t1:"Escócia",t2:"Marrocos",cidade:"Boston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:31,fase:"Grupos",rodada:"2ª Rodada",grupo:"C",data:"2026-06-19",hora:"21:30",t1:"Brasil",t2:"Haiti",cidade:"Philadelphia",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:true},
   {id:32,fase:"Grupos",rodada:"2ª Rodada",grupo:"D",data:"2026-06-20",hora:"00:00",t1:"Turquia",t2:"Paraguai",cidade:"San Francisco",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:33,fase:"Grupos",rodada:"2ª Rodada",grupo:"F",data:"2026-06-20",hora:"14:00",t1:"Países Baixos",t2:"Suécia",cidade:"Houston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:33,fase:"Grupos",rodada:"2ª Rodada",grupo:"F",data:"2026-06-20",hora:"14:00",t1:"Países Baixos",t2:"Suécia",cidade:"Houston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:34,fase:"Grupos",rodada:"2ª Rodada",grupo:"E",data:"2026-06-20",hora:"17:00",t1:"Alemanha",t2:"Costa do Marfim",cidade:"Toronto",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:35,fase:"Grupos",rodada:"2ª Rodada",grupo:"E",data:"2026-06-20",hora:"21:00",t1:"Equador",t2:"Curaçao",cidade:"Kansas City",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:35,fase:"Grupos",rodada:"2ª Rodada",grupo:"E",data:"2026-06-20",hora:"21:00",t1:"Equador",t2:"Curaçao",cidade:"Kansas City",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:36,fase:"Grupos",rodada:"2ª Rodada",grupo:"F",data:"2026-06-21",hora:"01:00",t1:"Tunísia",t2:"Japão",cidade:"Monterrey",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:37,fase:"Grupos",rodada:"2ª Rodada",grupo:"H",data:"2026-06-21",hora:"13:00",t1:"Espanha",t2:"Arábia Saudita",cidade:"Atlanta",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:38,fase:"Grupos",rodada:"2ª Rodada",grupo:"G",data:"2026-06-21",hora:"16:00",t1:"Bélgica",t2:"Irã",cidade:"Los Angeles",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:37,fase:"Grupos",rodada:"2ª Rodada",grupo:"H",data:"2026-06-21",hora:"13:00",t1:"Espanha",t2:"Arábia Saudita",cidade:"Atlanta",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
+  {id:38,fase:"Grupos",rodada:"2ª Rodada",grupo:"G",data:"2026-06-21",hora:"16:00",t1:"Bélgica",t2:"Irã",cidade:"Los Angeles",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:39,fase:"Grupos",rodada:"2ª Rodada",grupo:"H",data:"2026-06-21",hora:"19:00",t1:"Uruguai",t2:"Cabo Verde",cidade:"Miami",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
   {id:40,fase:"Grupos",rodada:"2ª Rodada",grupo:"G",data:"2026-06-21",hora:"22:00",t1:"Nova Zelândia",t2:"Egito",cidade:"Vancouver",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
   {id:41,fase:"Grupos",rodada:"2ª Rodada",grupo:"J",data:"2026-06-22",hora:"14:00",t1:"Argentina",t2:"Áustria",cidade:"Dallas",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:42,fase:"Grupos",rodada:"2ª Rodada",grupo:"I",data:"2026-06-22",hora:"18:00",t1:"França",t2:"Iraque",cidade:"Philadelphia",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:42,fase:"Grupos",rodada:"2ª Rodada",grupo:"I",data:"2026-06-22",hora:"18:00",t1:"França",t2:"Iraque",cidade:"Philadelphia",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:43,fase:"Grupos",rodada:"2ª Rodada",grupo:"I",data:"2026-06-22",hora:"21:00",t1:"Noruega",t2:"Senegal",cidade:"Nova York/NJ",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
   {id:44,fase:"Grupos",rodada:"2ª Rodada",grupo:"J",data:"2026-06-23",hora:"00:00",t1:"Jordânia",t2:"Argélia",cidade:"San Francisco",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:45,fase:"Grupos",rodada:"2ª Rodada",grupo:"K",data:"2026-06-23",hora:"14:00",t1:"Portugal",t2:"Uzbequistão",cidade:"Houston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:45,fase:"Grupos",rodada:"2ª Rodada",grupo:"K",data:"2026-06-23",hora:"14:00",t1:"Portugal",t2:"Uzbequistão",cidade:"Houston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:46,fase:"Grupos",rodada:"2ª Rodada",grupo:"L",data:"2026-06-23",hora:"17:00",t1:"Inglaterra",t2:"Gana",cidade:"Boston",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
-  {id:47,fase:"Grupos",rodada:"2ª Rodada",grupo:"L",data:"2026-06-23",hora:"20:00",t1:"Panamá",t2:"Croácia",cidade:"Toronto",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
+  {id:47,fase:"Grupos",rodada:"2ª Rodada",grupo:"L",data:"2026-06-23",hora:"20:00",t1:"Panamá",t2:"Croácia",cidade:"Toronto",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:48,fase:"Grupos",rodada:"2ª Rodada",grupo:"K",data:"2026-06-23",hora:"23:00",t1:"Colômbia",t2:"Congo (RD)",cidade:"Guadalajara",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
   {id:49,fase:"Grupos",rodada:"3ª Rodada",grupo:"B",data:"2026-06-24",hora:"16:00",t1:"Suíça",t2:"Canadá",cidade:"Vancouver",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
   {id:50,fase:"Grupos",rodada:"3ª Rodada",grupo:"B",data:"2026-06-24",hora:"16:00",t1:"Bósnia-Herzegovina",t2:"Qatar",cidade:"Seattle",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
@@ -532,6 +543,7 @@ function passesFilter(g) {
   if (activeStatus === 'encerrado') return g.status === 'encerrado';
   if (activeStatus === 'brasil') return g.brasil;
   if (activeStatus === 'com_dados') return g.audiencia_sim !== null;
+  if (activeStatus === 'caze_exclusivo') return g.caze_exclusivo === true;
   if (activePhase !== 'all') return g.fase === activePhase;
   return true;
 }
@@ -622,10 +634,11 @@ function renderTable() {
         alcSbtHtml = `<span class="views-none">—</span>`;
       }
 
+      const isCazeEx = g.caze_exclusivo === true;
       html += `
-      <tr class="data-row ${isBrasil?'brasil-row':''}">
+      <tr class="data-row ${isBrasil?'brasil-row':''} ${isCazeEx?'caze-ex-row':''}">
         <td style="color:#8B949E;font-size:11px">${g.id}</td>
-        <td class="teams">${isBrasil?'🇧🇷 ':''}${g.t1}<span class="team-vs">vs</span>${g.t2}</td>
+        <td class="teams">${isBrasil?'🇧🇷 ':''}${g.t1}<span class="team-vs">vs</span>${g.t2}${isCazeEx?'<span class="badge-caze-ex">◉ EXCLUSIVO CAZÉ</span>':''}</td>
         <td>${g.grupo ? `<span class="grupo">${g.grupo}</span>` : '<span style="color:#555">—</span>'}</td>
         <td class="datetime"><div class="date">${fmtDate(g.data)}</div><div class="time">${g.hora}</div></td>
         <td class="city td-city">${g.cidade}</td>
