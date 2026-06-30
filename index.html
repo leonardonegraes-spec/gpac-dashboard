@@ -323,6 +323,7 @@
 <div class="tabs-nav">
   <button class="tab-btn active" onclick="switchTab('tabela',this)">📋 Jogos</button>
   <button class="tab-btn" onclick="switchTab('graficos',this)">📊 Gráficos</button>
+  <button class="tab-btn" onclick="switchTab('brasil',this)">🇧🇷 Brasil</button>
 </div>
 
 <!-- TAB: TABELA -->
@@ -376,6 +377,32 @@
   </div>
 </div>
 </div><!-- /tab-graficos -->
+
+<!-- TAB: BRASIL -->
+<div class="tab-panel" id="tab-brasil">
+<div class="charts-wrap">
+  <!-- KPI Cards Brasil -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px" id="brasilKpis"></div>
+  <div class="chart-grid">
+    <div class="chart-card full">
+      <div class="chart-title">🟢 <span>Cazé TV</span> — Espectadores Simultâneos · Jogos do Brasil</div>
+      <div class="chart-container tall"><canvas id="chartBrasilCaze"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📡 <span style="color:#4FC3F7">Globo</span> — Alcance · Jogos do Brasil (mi)</div>
+      <div class="chart-container"><canvas id="chartBrasilGlobo"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📡 <span style="color:#FFD700">SBT</span> — Alcance · Jogos do Brasil (mi)</div>
+      <div class="chart-container"><canvas id="chartBrasilSbt"></canvas></div>
+    </div>
+    <div class="chart-card full">
+      <div class="chart-title">📊 Comparativo Brasil — <span>Cazé TV</span> vs <span style="color:#4FC3F7">Globo</span> vs <span style="color:#FFD700">SBT</span> vs <span style="color:#7B61FF">SporTV</span></div>
+      <div class="chart-container"><canvas id="chartBrasilComp"></canvas></div>
+    </div>
+  </div>
+</div>
+</div><!-- /tab-brasil -->
 
 <!-- FOOTER -->
 <div class="footer">
@@ -467,7 +494,7 @@ const SCHEDULE = [
   {id:71,fase:"Grupos",rodada:"3ª Rodada",grupo:"J",data:"2026-06-27",hora:"23:00",t1:"Argélia",t2:"Áustria",cidade:"Kansas City",status:"encerrado",video_id:null,audiencia_sim:800000,globo_pts:null,sbt_pts:null,globo_alc:16.4,sportv_alc:0.6,brasil:false},
   {id:72,fase:"Grupos",rodada:"3ª Rodada",grupo:"J",data:"2026-06-27",hora:"23:00",t1:"Jordânia",t2:"Argentina",cidade:"Dallas",status:"encerrado",video_id:null,audiencia_sim:8500000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
   {id:73,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-28",hora:"16:00",t1:"África do Sul",t2:"Canadá",cidade:"Los Angeles",status:"encerrado",video_id:null,audiencia_sim:6000000,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
-  {id:74,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-29",hora:"14:00",t1:"Brasil",t2:"Japão",cidade:"Houston",status:"encerrado",video_id:null,audiencia_sim:21100000,globo_pts:null,sbt_pts:null,globo_alc:34.0,sportv_alc:1.2,brasil:true},
+  {id:74,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-29",hora:"14:00",t1:"Brasil",t2:"Japão",cidade:"Houston",status:"encerrado",video_id:null,audiencia_sim:21100000,globo_pts:null,sbt_pts:null,globo_alc:34.0,sportv_alc:1.2,sbt_alc:8.8,brasil:true},
   {id:75,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-29",hora:"17:30",t1:"Alemanha",t2:"Paraguai",cidade:"Boston",status:"encerrado",video_id:null,audiencia_sim:12400000,globo_pts:null,sbt_pts:null,globo_alc:25.3,sportv_alc:1.1,brasil:false},
   {id:76,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-29",hora:"22:00",t1:"Países Baixos",t2:"Marrocos",cidade:"Monterrey",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,brasil:false},
   {id:77,fase:"R32",rodada:"Rodada de 32",grupo:"",data:"2026-06-30",hora:"14:00",t1:"Costa do Marfim",t2:"Noruega",cidade:"Dallas",status:"pendente",video_id:null,audiencia_sim:null,globo_pts:null,sbt_pts:null,caze_exclusivo:true,brasil:false},
@@ -702,6 +729,7 @@ function switchTab(id, btn) {
   document.getElementById('tab-' + id).classList.add('active');
   btn.classList.add('active');
   if (id === 'graficos' && !window._chartsBuilt) buildCharts();
+  if (id === 'brasil' && !window._brasilChartsBuilt) buildBrasilCharts();
 }
 
 function buildCharts() {
@@ -835,6 +863,115 @@ function buildCharts() {
       scales: {
         x: { ticks: { color: '#8B949E', font: { size: 9 }, maxRotation: 45 }, grid: { color: '#21262D' } },
         y: { ticks: { color: '#8B949E', font: { size: 10 }, callback: v => v + ' mi' }, grid: { color: '#21262D' } }
+      }
+    }
+  });
+}
+
+function buildBrasilCharts() {
+  window._brasilChartsBuilt = true;
+  const br = SCHEDULE.filter(g => g.brasil);
+  const enc = br.filter(g => g.audiencia_sim != null);
+
+  // Labels curtos: fase + rodada
+  const lbl = g => {
+    const fase = g.rodada === 'Rodada de 32' ? 'R32' : g.rodada.replace('ª Rodada','ªR');
+    const adv = (g.t1 === 'Brasil' ? g.t2 : g.t1).split(' ')[0];
+    return `${fase} · vs ${adv}`;
+  };
+
+  const baseOpts = (color) => ({
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { labelColor: () => ({ backgroundColor: color }) }}},
+    scales: {
+      x: { ticks: { color: '#8B949E', font: { size: 11 }, maxRotation: 30 }, grid: { color: '#21262D' } },
+      y: { ticks: { color: '#8B949E', font: { size: 10 } }, grid: { color: '#21262D' } }
+    }
+  });
+
+  // KPI cards
+  const kpiWrap = document.getElementById('brasilKpis');
+  const brEnc = enc;
+  const maxCaze = brEnc.length ? Math.max(...brEnc.map(g=>g.audiencia_sim)) : 0;
+  const maxGlobo = brEnc.filter(g=>g.globo_alc).length ? Math.max(...brEnc.filter(g=>g.globo_alc).map(g=>g.globo_alc)) : 0;
+  const maxSbt = brEnc.filter(g=>g.sbt_alc).length ? Math.max(...brEnc.filter(g=>g.sbt_alc).map(g=>g.sbt_alc)) : 0;
+  const avgCaze = brEnc.length ? (brEnc.reduce((s,g)=>s+g.audiencia_sim,0)/brEnc.length/1e6).toFixed(1) : '—';
+  const kpis = [
+    { label:'Jogos disputados', val: br.filter(g=>g.status==='encerrado').length, sub:'', color:'var(--accent)' },
+    { label:'Pico CazéTV', val: maxCaze ? (maxCaze/1e6).toFixed(1)+'M', sub:'espect. simultâneos', color:'var(--accent)' },
+    { label:'Pico Globo', val: maxGlobo ? maxGlobo.toFixed(1)+'M', sub:'alcance Kantar', color:'#4FC3F7' },
+    { label:'Pico SBT', val: maxSbt ? maxSbt.toFixed(1)+'M', sub:'alcance Kantar', color:'#FFD700' },
+  ];
+  kpiWrap.innerHTML = kpis.map(k => `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px">
+      <div style="font-size:22px;font-weight:700;color:${k.color}">${k.val}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${k.label}</div>
+      ${k.sub ? `<div style="font-size:10px;color:var(--text-muted);opacity:.7">${k.sub}</div>` : ''}
+    </div>`).join('');
+
+  // CazéTV
+  new Chart(document.getElementById('chartBrasilCaze'), {
+    type: 'bar',
+    data: {
+      labels: enc.map(lbl),
+      datasets: [{ data: enc.map(g=>g.audiencia_sim/1e6), backgroundColor:'rgba(255,215,0,0.8)', borderColor:'#FFD700', borderWidth:1, borderRadius:5 }]
+    },
+    options: { ...baseOpts('#FFD700'),
+      plugins: { ...baseOpts('#FFD700').plugins, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1)+'M espect. simultâneos' }}},
+      scales: { x: baseOpts().scales.x, y: { ticks: { color:'#8B949E', font:{size:10}, callback: v=>v.toFixed(1)+'M' }, grid:{ color:'#21262D' } } }
+    }
+  });
+
+  // Globo
+  const brGlobo = enc.filter(g=>g.globo_alc);
+  new Chart(document.getElementById('chartBrasilGlobo'), {
+    type: 'bar',
+    data: {
+      labels: brGlobo.map(lbl),
+      datasets: [{ data: brGlobo.map(g=>g.globo_alc), backgroundColor:'rgba(79,195,247,0.75)', borderColor:'#4FC3F7', borderWidth:1, borderRadius:5 }]
+    },
+    options: { ...baseOpts('#4FC3F7'),
+      plugins: { ...baseOpts('#4FC3F7').plugins, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1)+' mi alcance' }}},
+      scales: { x: baseOpts().scales.x, y: { ticks: { color:'#8B949E', font:{size:10}, callback: v=>v+'mi' }, grid:{ color:'#21262D' } } }
+    }
+  });
+
+  // SBT
+  const brSbt = enc.filter(g=>g.sbt_alc);
+  new Chart(document.getElementById('chartBrasilSbt'), {
+    type: 'bar',
+    data: {
+      labels: brSbt.map(lbl),
+      datasets: [{ data: brSbt.map(g=>g.sbt_alc), backgroundColor:'rgba(255,215,0,0.6)', borderColor:'#FFD700', borderWidth:1, borderRadius:5 }]
+    },
+    options: { ...baseOpts('#FFD700'),
+      plugins: { ...baseOpts('#FFD700').plugins, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1)+' mi alcance SBT' }}},
+      scales: { x: baseOpts().scales.x, y: { ticks: { color:'#8B949E', font:{size:10}, callback: v=>v+'mi' }, grid:{ color:'#21262D' } } }
+    }
+  });
+
+  // Comparativo
+  const compBr = enc.filter(g=>g.globo_alc);
+  new Chart(document.getElementById('chartBrasilComp'), {
+    type: 'bar',
+    data: {
+      labels: compBr.map(lbl),
+      datasets: [
+        { label:'Cazé TV (simult.)', data: compBr.map(g=>(g.audiencia_sim/1e6).toFixed(2)), backgroundColor:'rgba(170,220,50,0.75)', borderColor:'#AADC32', borderWidth:1, borderRadius:4 },
+        { label:'Globo (alcance)',   data: compBr.map(g=>g.globo_alc),  backgroundColor:'rgba(79,195,247,0.7)', borderColor:'#4FC3F7', borderWidth:1, borderRadius:4 },
+        { label:'SBT (alcance)',     data: compBr.map(g=>g.sbt_alc||null), backgroundColor:'rgba(255,215,0,0.6)', borderColor:'#FFD700', borderWidth:1, borderRadius:4 },
+        { label:'SporTV (alcance)',  data: compBr.map(g=>g.sportv_alc||null), backgroundColor:'rgba(123,97,255,0.6)', borderColor:'#7B61FF', borderWidth:1, borderRadius:4 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend:{ display:true, labels:{ color:'#8B949E', font:{size:11}, boxWidth:12 }},
+        tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.parsed.y!=null?+ctx.parsed.y.toFixed(2)+' mi':'—') }}
+      },
+      scales: {
+        x:{ ticks:{ color:'#8B949E', font:{size:11}, maxRotation:30 }, grid:{ color:'#21262D' }},
+        y:{ ticks:{ color:'#8B949E', font:{size:10}, callback: v=>v+' mi' }, grid:{ color:'#21262D' }}
       }
     }
   });
