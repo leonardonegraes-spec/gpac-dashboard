@@ -873,16 +873,15 @@ function buildBrasilCharts() {
   const br = SCHEDULE.filter(g => g.brasil);
   const enc = br.filter(g => g.audiencia_sim != null);
 
-  // Labels curtos: fase + rodada
   const lbl = g => {
     const fase = g.rodada === 'Rodada de 32' ? 'R32' : g.rodada.replace('ª Rodada','ªR');
     const adv = (g.t1 === 'Brasil' ? g.t2 : g.t1).split(' ')[0];
-    return `${fase} · vs ${adv}`;
+    return fase + ' · vs ' + adv;
   };
 
-  const baseOpts = (color) => ({
+  const baseOpts = () => ({
     responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { callbacks: { labelColor: () => ({ backgroundColor: color }) }}},
+    plugins: { legend: { display: false } },
     scales: {
       x: { ticks: { color: '#8B949E', font: { size: 11 }, maxRotation: 30 }, grid: { color: '#21262D' } },
       y: { ticks: { color: '#8B949E', font: { size: 10 } }, grid: { color: '#21262D' } }
@@ -890,88 +889,94 @@ function buildBrasilCharts() {
   });
 
   // KPI cards
-  const kpiWrap = document.getElementById('brasilKpis');
-  const brEnc = enc;
-  const maxCaze = brEnc.length ? Math.max(...brEnc.map(g=>g.audiencia_sim)) : 0;
-  const maxGlobo = brEnc.filter(g=>g.globo_alc).length ? Math.max(...brEnc.filter(g=>g.globo_alc).map(g=>g.globo_alc)) : 0;
-  const maxSbt = brEnc.filter(g=>g.sbt_alc).length ? Math.max(...brEnc.filter(g=>g.sbt_alc).map(g=>g.sbt_alc)) : 0;
-  const avgCaze = brEnc.length ? (brEnc.reduce((s,g)=>s+g.audiencia_sim,0)/brEnc.length/1e6).toFixed(1) : '—';
+  const maxCaze  = enc.length ? Math.max(...enc.map(g => g.audiencia_sim)) : 0;
+  const maxGlobo = enc.filter(g => g.globo_alc).length  ? Math.max(...enc.filter(g => g.globo_alc).map(g => g.globo_alc))   : 0;
+  const maxSbt   = enc.filter(g => g.sbt_alc).length    ? Math.max(...enc.filter(g => g.sbt_alc).map(g => g.sbt_alc))       : 0;
   const kpis = [
-    { label:'Jogos disputados', val: br.filter(g=>g.status==='encerrado').length, sub:'', color:'var(--accent)' },
-    { label:'Pico CazéTV', val: maxCaze ? (maxCaze/1e6).toFixed(1)+'M', sub:'espect. simultâneos', color:'var(--accent)' },
-    { label:'Pico Globo', val: maxGlobo ? maxGlobo.toFixed(1)+'M', sub:'alcance Kantar', color:'#4FC3F7' },
-    { label:'Pico SBT', val: maxSbt ? maxSbt.toFixed(1)+'M', sub:'alcance Kantar', color:'#FFD700' },
+    { label: 'Jogos do Brasil',  val: br.filter(g => g.status === 'encerrado').length, sub: 'encerrados',          color: 'var(--accent)' },
+    { label: 'Pico CazéTV',      val: maxCaze  ? (maxCaze/1e6).toFixed(1)+'M' : '—',  sub: 'espect. simultâneos', color: 'var(--accent)' },
+    { label: 'Pico Globo',       val: maxGlobo ? maxGlobo.toFixed(1)+'M' : '—',        sub: 'alcance Kantar',      color: '#4FC3F7' },
+    { label: 'Pico SBT',         val: maxSbt   ? maxSbt.toFixed(1)+'M' : '—',          sub: 'alcance Kantar',      color: '#FFD700' },
   ];
-  kpiWrap.innerHTML = kpis.map(k => `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px">
-      <div style="font-size:22px;font-weight:700;color:${k.color}">${k.val}</div>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${k.label}</div>
-      ${k.sub ? `<div style="font-size:10px;color:var(--text-muted);opacity:.7">${k.sub}</div>` : ''}
-    </div>`).join('');
+  document.getElementById('brasilKpis').innerHTML = kpis.map(k =>
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px">' +
+    '<div style="font-size:22px;font-weight:700;color:' + k.color + '">' + k.val + '</div>' +
+    '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + k.label + '</div>' +
+    '<div style="font-size:10px;color:var(--text-muted);opacity:.7">' + k.sub + '</div></div>'
+  ).join('');
 
-  // CazéTV
+  // CazéTV Brasil
   new Chart(document.getElementById('chartBrasilCaze'), {
     type: 'bar',
     data: {
       labels: enc.map(lbl),
-      datasets: [{ data: enc.map(g=>g.audiencia_sim/1e6), backgroundColor:'rgba(255,215,0,0.8)', borderColor:'#FFD700', borderWidth:1, borderRadius:5 }]
+      datasets: [{ data: enc.map(g => +(g.audiencia_sim/1e6).toFixed(2)), backgroundColor: 'rgba(255,215,0,0.8)', borderColor: '#FFD700', borderWidth: 1, borderRadius: 5 }]
     },
-    options: { ...baseOpts('#FFD700'),
-      plugins: { ...baseOpts('#FFD700').plugins, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1)+'M espect. simultâneos' }}},
-      scales: { x: baseOpts().scales.x, y: { ticks: { color:'#8B949E', font:{size:10}, callback: v=>v.toFixed(1)+'M' }, grid:{ color:'#21262D' } } }
-    }
+    options: Object.assign(baseOpts(), {
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1) + 'M espect. simultâneos' }}},
+      scales: {
+        x: { ticks: { color: '#8B949E', font: { size: 11 }, maxRotation: 30 }, grid: { color: '#21262D' } },
+        y: { ticks: { color: '#8B949E', font: { size: 10 }, callback: v => v.toFixed(1) + 'M' }, grid: { color: '#21262D' } }
+      }
+    })
   });
 
-  // Globo
-  const brGlobo = enc.filter(g=>g.globo_alc);
+  // Globo Brasil
+  const brGlobo = enc.filter(g => g.globo_alc);
   new Chart(document.getElementById('chartBrasilGlobo'), {
     type: 'bar',
     data: {
       labels: brGlobo.map(lbl),
-      datasets: [{ data: brGlobo.map(g=>g.globo_alc), backgroundColor:'rgba(79,195,247,0.75)', borderColor:'#4FC3F7', borderWidth:1, borderRadius:5 }]
+      datasets: [{ data: brGlobo.map(g => g.globo_alc), backgroundColor: 'rgba(79,195,247,0.75)', borderColor: '#4FC3F7', borderWidth: 1, borderRadius: 5 }]
     },
-    options: { ...baseOpts('#4FC3F7'),
-      plugins: { ...baseOpts('#4FC3F7').plugins, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1)+' mi alcance' }}},
-      scales: { x: baseOpts().scales.x, y: { ticks: { color:'#8B949E', font:{size:10}, callback: v=>v+'mi' }, grid:{ color:'#21262D' } } }
-    }
+    options: Object.assign(baseOpts(), {
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1) + ' mi alcance' }}},
+      scales: {
+        x: { ticks: { color: '#8B949E', font: { size: 11 }, maxRotation: 30 }, grid: { color: '#21262D' } },
+        y: { ticks: { color: '#8B949E', font: { size: 10 }, callback: v => v + 'mi' }, grid: { color: '#21262D' } }
+      }
+    })
   });
 
-  // SBT
-  const brSbt = enc.filter(g=>g.sbt_alc);
+  // SBT Brasil
+  const brSbt = enc.filter(g => g.sbt_alc);
   new Chart(document.getElementById('chartBrasilSbt'), {
     type: 'bar',
     data: {
       labels: brSbt.map(lbl),
-      datasets: [{ data: brSbt.map(g=>g.sbt_alc), backgroundColor:'rgba(255,215,0,0.6)', borderColor:'#FFD700', borderWidth:1, borderRadius:5 }]
+      datasets: [{ data: brSbt.map(g => g.sbt_alc), backgroundColor: 'rgba(255,215,0,0.6)', borderColor: '#FFD700', borderWidth: 1, borderRadius: 5 }]
     },
-    options: { ...baseOpts('#FFD700'),
-      plugins: { ...baseOpts('#FFD700').plugins, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1)+' mi alcance SBT' }}},
-      scales: { x: baseOpts().scales.x, y: { ticks: { color:'#8B949E', font:{size:10}, callback: v=>v+'mi' }, grid:{ color:'#21262D' } } }
-    }
+    options: Object.assign(baseOpts(), {
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1) + ' mi alcance SBT' }}},
+      scales: {
+        x: { ticks: { color: '#8B949E', font: { size: 11 }, maxRotation: 30 }, grid: { color: '#21262D' } },
+        y: { ticks: { color: '#8B949E', font: { size: 10 }, callback: v => v + 'mi' }, grid: { color: '#21262D' } }
+      }
+    })
   });
 
-  // Comparativo
-  const compBr = enc.filter(g=>g.globo_alc);
+  // Comparativo Brasil
+  const compBr = enc.filter(g => g.globo_alc);
   new Chart(document.getElementById('chartBrasilComp'), {
     type: 'bar',
     data: {
       labels: compBr.map(lbl),
       datasets: [
-        { label:'Cazé TV (simult.)', data: compBr.map(g=>(g.audiencia_sim/1e6).toFixed(2)), backgroundColor:'rgba(170,220,50,0.75)', borderColor:'#AADC32', borderWidth:1, borderRadius:4 },
-        { label:'Globo (alcance)',   data: compBr.map(g=>g.globo_alc),  backgroundColor:'rgba(79,195,247,0.7)', borderColor:'#4FC3F7', borderWidth:1, borderRadius:4 },
-        { label:'SBT (alcance)',     data: compBr.map(g=>g.sbt_alc||null), backgroundColor:'rgba(255,215,0,0.6)', borderColor:'#FFD700', borderWidth:1, borderRadius:4 },
-        { label:'SporTV (alcance)',  data: compBr.map(g=>g.sportv_alc||null), backgroundColor:'rgba(123,97,255,0.6)', borderColor:'#7B61FF', borderWidth:1, borderRadius:4 },
+        { label: 'Cazé TV (simult.)', data: compBr.map(g => +(g.audiencia_sim/1e6).toFixed(2)), backgroundColor: 'rgba(170,220,50,0.75)', borderColor: '#AADC32', borderWidth: 1, borderRadius: 4 },
+        { label: 'Globo (alcance)',   data: compBr.map(g => g.globo_alc),                        backgroundColor: 'rgba(79,195,247,0.7)',   borderColor: '#4FC3F7', borderWidth: 1, borderRadius: 4 },
+        { label: 'SBT (alcance)',     data: compBr.map(g => g.sbt_alc   || null),                backgroundColor: 'rgba(255,215,0,0.6)',    borderColor: '#FFD700', borderWidth: 1, borderRadius: 4 },
+        { label: 'SporTV (alcance)',  data: compBr.map(g => g.sportv_alc || null),               backgroundColor: 'rgba(123,97,255,0.6)',   borderColor: '#7B61FF', borderWidth: 1, borderRadius: 4 }
       ]
     },
     options: {
-      responsive:true, maintainAspectRatio:false,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend:{ display:true, labels:{ color:'#8B949E', font:{size:11}, boxWidth:12 }},
-        tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.parsed.y!=null?+ctx.parsed.y.toFixed(2)+' mi':'—') }}
+        legend: { display: true, labels: { color: '#8B949E', font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y != null ? +ctx.parsed.y.toFixed(2) + ' mi' : '—') }}
       },
       scales: {
-        x:{ ticks:{ color:'#8B949E', font:{size:11}, maxRotation:30 }, grid:{ color:'#21262D' }},
-        y:{ ticks:{ color:'#8B949E', font:{size:10}, callback: v=>v+' mi' }, grid:{ color:'#21262D' }}
+        x: { ticks: { color: '#8B949E', font: { size: 11 }, maxRotation: 30 }, grid: { color: '#21262D' } },
+        y: { ticks: { color: '#8B949E', font: { size: 10 }, callback: v => v + ' mi' }, grid: { color: '#21262D' } }
       }
     }
   });
